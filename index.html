@@ -440,7 +440,7 @@
 
                     tbody("performanceTable").appendChild(tr);
                 });
-                setText("avgGrade", Number(data.avg_grade ?? 0).toFixed(2));
+                setText("avgGrade", Number(data.average ?? 0).toFixed(2));
             } catch (e) {
                 hide("perfStatus");
                 show("perfError");
