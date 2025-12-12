@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <title>Аналіз успішності студентів</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Підключаємо Chart.js для графіків -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #111827;
+            --border: #1f2937;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --accent: #3b82f6;
+            --accent-2: #10b981;
+            --danger: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            background: radial-gradient(1200px 600px at 20% -10%, #1f2937, transparent),
+                        radial-gradient(800px 400px at 80% -10%, #111827, transparent),
+                        var(--bg);
+            color: var(--text);
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .badge {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            background: #0b1220;
+            color: var(--muted);
+            font-size: 12px;
+            border-radius: 999px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 0.2px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+        @media (min-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .grid-wide {
+                grid-column: 1 / -1;
+            }
+        }
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        .card h2 {
+            margin: 0 0 12px 0;
+            font-size: 18px;
+            color: var(--text);
+        }
+        .card p.muted {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 6px 0 16px;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .select, .button {
+            border: 1px solid var(--border);
+            background: #0b1220;
+            color: var(--text);
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .button {
+            background: linear-gradient(180deg, #0d1a34, #0a1426);
+            cursor: pointer;
+        }
+        .button.primary { border-color: #1d4ed8; color: #bfdbfe; }
+        .button:hover { filter: brightness(1.1); }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        thead th {
+            background: #0b1220;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 13px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        tbody td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            color: var(--text);
+        }
+        tbody tr:hover {
+            background: rgba(59, 130, 246, 0.08);
+        }
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--muted);
+            padding: 8px 10px;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+        .status .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-2);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--accent-2);
+        }
+        .chart-wrapper {
+            background: #0b1220;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .error { color: var(--danger); font-size: 13px; margin-top: 8px; }
+        footer {
+            margin-top: 30px; color: var(--muted); font-size: 12px; text-align: center;
+        }
+        .empty {
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+            padding: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="badge">Курсова — інформаційна система</span>
+            <h1>Аналіз успішності студентів та рейтинг факультетів</h1>
+        </header>
+
+        <div class="grid">
+            <!-- Студенти -->
+            <section class="card">
+                <h2>Студенти</h2>
+                <p class="muted">Список всіх студентів з факультетом та групою.</p>
+                <div id="studentsStatus" class="status"><span class="dot"></span> Завантаження...</div>
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ПІБ</th>
+                            <th>Група</th>
+                            <th>Факультет</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="studentsError" class="error" style="display:none;"></div>
+            </section>
+
+            <!-- Факультети -->
+            <section class="card">
+                <h2>Факультети</h2>
+                <p class="muted">Перелік факультетів.</p>
+                <div id="facultiesStatus" class="status"><span class="dot"></span> Завантаження...</div>
+                <table id="facultiesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Назва</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="facultiesError" class="error" style="display:none;"></div>
+            </section>
+
+            <!-- Предмети -->
+            <section class="card">
+                <h2>Предмети</h2>
+                <p class="muted">Перелік навчальних дисциплін.</p>
+                <div id="subjectsStatus" class="status"><span class="dot"></span> Завантаження...</div>
+                <table id="subjectsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Назва</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="subjectsError" class="error" style="display:none;"></div>
+            </section>
+
+            <!-- Рейтинг факультетів -->
+            <section class="card grid-wide">
+                <h2>Рейтинг факультетів</h2>
+                <p class="muted">Сортування за середнім балом студентів.</p>
+                <div id="ratingStatus" class="status"><span class="dot"></span> Завантаження...</div>
+                <table id="ratingTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Факультет</th>
+                            <th>Середній бал</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="ratingError" class="error" style="display:none;"></div>
+                <div class="chart-wrapper" style="margin-top:14px;">
+                    <canvas id="ratingChart" height="120"></canvas>
+                </div>
+            </section>
+
+            <!-- Успішність студента -->
+            <section class="card grid-wide">
+                <h2>Успішність студента</h2>
+                <p class="muted">Оберіть студента, щоб побачити його оцінки та середній бал.</p>
+                <div class="toolbar">
+                    <select id="studentSelect" class="select"></select>
+                    <button class="button primary" id="showPerformanceBtn">Показати успішність</button>
+                </div>
+                <div id="perfStatus" class="status" style="display:none;"><span class="dot"></span> Завантаження...</div>
+                <table id="performanceTable">
+                    <thead>
+                        <tr>
+                            <th>Предмет</th>
+                            <th>Оцінка</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div id="perfEmpty" class="empty" style="display:none;">Оцінок не знайдено.</div>
+                <p style="margin-top:10px;"><strong>Середній бал:</strong> <span id="avgGrade">—</span></p>
+                <div id="perfError" class="error" style="display:none;"></div>
+            </section>
+        </div>
+
+        <footer>© Твоя курсова. Дані з локального API Flask.</footer>
+    </div>
+
+    <script>
+        const API = "http://127.0.0.1:5000";
+
+        // Допоміжні функції
+        const show = (id) => document.getElementById(id).style.display = "";
+        const hide = (id) => document.getElementById(id).style.display = "none";
+        const setText = (id, text) => document.getElementById(id).textContent = text;
+        const tbody = (tableId) => document.querySelector(`#${tableId} tbody`);
+        const clearTbody = (tableId) => tbody(tableId).innerHTML = "";
+
+        async function safeFetch(url) {
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status} — ${url}`);
+            }
+            return res.json();
+        }
+
+        // Заповнення таблиць
+        async function loadStudents() {
+            try {
+                const data = await safeFetch(`${API}/students`);
+                hide("studentsStatus");
+                clearTbody("studentsTable");
+                if (!data.length) {
+                    tbody("studentsTable").innerHTML = `<tr><td colspan="4" class="empty">Немає даних</td></tr>`;
+                    return;
+                }
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.full_name}</td><td>${row.group_name ?? "—"}</td><td>${row.faculty}</td>`;
+                    tbody("studentsTable").appendChild(tr);
+                });
+                // Заповнити select студентів
+                const select = document.getElementById("studentSelect");
+                select.innerHTML = "";
+                data.forEach(st => {
+                    const opt = document.createElement("option");
+                    opt.value = st.id;
+                    opt.textContent = st.full_name;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                hide("studentsStatus");
+                show("studentsError");
+                setText("studentsError", `Помилка завантаження студентів: ${e.message}`);
+            }
+        }
+
+        async function loadFaculties() {
+            try {
+                const data = await safeFetch(`${API}/faculties`);
+                hide("facultiesStatus");
+                clearTbody("facultiesTable");
+                if (!data.length) {
+                    tbody("facultiesTable").innerHTML = `<tr><td colspan="2" class="empty">Немає даних</td></tr>`;
+                    return;
+                }
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.name}</td>`;
+                    tbody("facultiesTable").appendChild(tr);
+                });
+            } catch (e) {
+                hide("facultiesStatus");
+                show("facultiesError");
+                setText("facultiesError", `Помилка завантаження факультетів: ${e.message}`);
+            }
+        }
+
+        async function loadSubjects() {
+            try {
+                const data = await safeFetch(`${API}/subjects`);
+                hide("subjectsStatus");
+                clearTbody("subjectsTable");
+                if (!data.length) {
+                    tbody("subjectsTable").innerHTML = `<tr><td colspan="2" class="empty">Немає даних</td></tr>`;
+                    return;
+                }
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.name}</td>`;
+                    tbody("subjectsTable").appendChild(tr);
+                });
+            } catch (e) {
+                hide("subjectsStatus");
+                show("subjectsError");
+                setText("subjectsError", `Помилка завантаження предметів: ${e.message}`);
+            }
+        }
+
+        async function loadRating() {
+            try {
+                const data = await safeFetch(`${API}/faculty-rating`);
+                hide("ratingStatus");
+                clearTbody("ratingTable");
+                if (!data.length) {
+                    tbody("ratingTable").innerHTML = `<tr><td colspan="3" class="empty">Немає даних</td></tr>`;
+                    return;
+                }
+                const labels = [];
+                const values = [];
+                data.forEach(row => {
+                    const tr = document.createElement("tr");
+                    const avg = Number(row.avg_grade ?? 0);
+                    tr.innerHTML = `<td>${row.id}</td><td>${row.faculty_name}</td><td>${avg.toFixed(2)}</td>`;
+                    tbody("ratingTable").appendChild(tr);
+                    labels.push(row.faculty_name);
+                    values.push(avg);
+                });
+                // Графік
+                const ctx = document.getElementById("ratingChart").getContext("2d");
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: "Середній бал факультету",
+                            data: values,
+                            backgroundColor: "rgba(59, 130, 246, 0.6)",
+                            borderColor: "rgba(59, 130, 246, 1)",
+                            borderWidth: 1,
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { labels: { color: "#cbd5e1" } }
+                        },
+                        scales: {
+                            x: { ticks: { color: "#cbd5e1" }, grid: { color: "#1f2937" } },
+                            y: { beginAtZero: true, ticks: { color: "#cbd5e1" }, grid: { color: "#1f2937" } }
+                        }
+                    }
+                });
+            } catch (e) {
+                hide("ratingStatus");
+                show("ratingError");
+                setText("ratingError", `Помилка завантаження рейтингу: ${e.message}`);
+            }
+        }
+
+        async function loadStudentPerformance() {
+            const id = document.getElementById("studentSelect").value;
+            hide("perfError"); hide("perfEmpty");
+            show("perfStatus");
+            try {
+                const data = await safeFetch(`${API}/students/${id}/performance`);
+                hide("perfStatus");
+                clearTbody("performanceTable");
+                if (!data.grades || !data.grades.length) {
+                    show("perfEmpty");
+                    setText("avgGrade", "—");
+                    return;
+                }
+                data.grades.forEach(g => {
+                    const tr = document.createElement("tr");
+                    const formattedDate = g.date_passed
+                      ? new Date(g.date_passed).toLocaleDateString("uk-UA", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric"
+                      })
+                    : "—";
+
+                    tr.innerHTML = `<td>${g.subject}</td><td>${g.grade}</td><td>${formattedDate}</td>`;
+
+                    tbody("performanceTable").appendChild(tr);
+                });
+                setText("avgGrade", Number(data.avg_grade ?? 0).toFixed(2));
+            } catch (e) {
+                hide("perfStatus");
+                show("perfError");
+                setText("perfError", `Помилка завантаження успішності: ${e.message}`);
+            }
+        }
+
+        // Події
+        document.getElementById("showPerformanceBtn").addEventListener("click", loadStudentPerformance);
+
+        // Ініціалізація
+        (async () => {
+            await Promise.all([
+                loadStudents(),
+                loadFaculties(),
+                loadSubjects(),
+                loadRating()
+            ]);
+        })();
+    </script>
+
+
+</body>
+</html>
