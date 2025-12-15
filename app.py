@@ -9,7 +9,7 @@ CORS(app)
 db_config = {
     "host": "127.0.0.1",
     "user": "root",
-    "password": "Vv/20072205",   # заміни на свій пароль
+    "password": "Vv/20072205",   
     "database": "student_performance",
     "charset": "utf8mb4"
 }
