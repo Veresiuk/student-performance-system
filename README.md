@@ -33,3 +33,9 @@
 1. Клонуйте репозиторій:
    ```bash
    git clone https://github.com Veresiuk/student-performance-system.git
+
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   python app.py
+   Сервер буде доступний за адресою: http://localhost:5000
